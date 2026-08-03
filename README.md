@@ -1,17 +1,16 @@
 <h1 align="center">
-  <p align="center">Token Registry</p>
-  <a href="https://tradetrust.io"><img src="docs/images/tt-logo.png" alt="TradeTrust Token Registry" /></a>
+  <p align="center">Token Registry — Community Sandbox</p>
+  <a href="https://tradetrust.io"><img src="docs/images/tt-logo.png" alt="TradeTrust Token Registry Community Sandbox" /></a>
 </h1>
 
 <p align="center">
-    <a href="https://tradetrust.io">TradeTrust</a> Electronic Bill of Lading (eBL)
+    Community sandbox of the <a href="https://tradetrust.io">TradeTrust</a> Electronic Bill of Lading (eBL) Token Registry
 </p>
 
-<p align="center"> 
-  <a href="https://github.com/tradetrust/token-registry/tree/master" alt="Release"><img src="https://github.com/tradetrust/token-registry/actions/workflows/release.yml/badge.svg?event=push" /></a>
-  <a href="https://codecov.io/gh/Open-Attestation/token-registry" alt="Code Coverage"><img src="https://codecov.io/gh/Open-Attestation/token-registry/branch/master/graph/badge.svg?token=Y4R9SWXATG" /></a>
-  <a href="https://www.npmjs.com/package/@tradetrust-tt/token-registry" alt="NPM"><img src="https://img.shields.io/npm/dw/@tradetrust-tt/token-registry" /></a>
-  <img src="https://img.shields.io/github/license/open-attestation/token-registry" />
+<p align="center">
+  <a href="https://github.com/TradeTrust/token-registry-community-sandbox/tree/master" alt="Release"><img src="https://github.com/TradeTrust/token-registry-community-sandbox/actions/workflows/release.yml/badge.svg?event=push" /></a>
+  <a href="https://www.npmjs.com/package/@tradetrust-tt/token-registry-community-sandbox" alt="NPM"><img src="https://img.shields.io/npm/dw/@tradetrust-tt/token-registry-community-sandbox" /></a>
+  <img src="https://img.shields.io/github/license/TradeTrust/token-registry-community-sandbox" />
 </p>
 
 > [!WARNING]
@@ -21,8 +20,8 @@
 >
 > For the official, supported library, use [`@tradetrust-tt/token-registry`](https://www.npmjs.com/package/@tradetrust-tt/token-registry) from the official [TradeTrust/token-registry](https://github.com/TradeTrust/token-registry) repository.
 
-The Electronic Bill of Lading (eBL) is a digital document that can be used to prove the ownership of goods. It is a standardised document that is accepted by all major shipping lines and customs authorities. The [Token Registry](https://github.com/TradeTrust/token-registry) repository contains both the smart contract
-code for token registry (in `/contracts`) as well as the node package for using this library (in `/src`).
+The Electronic Bill of Lading (eBL) is a digital document that can be used to prove the ownership of goods. It is a standardised document that is accepted by all major shipping lines and customs authorities. This repository contains both the smart contract
+code for the token registry (in `/contracts`) as well as the node package for using this library (in `/src`).
 
 ## Table of Contents
 
@@ -85,7 +84,7 @@ See issue [#108](https://github.com/Open-Attestation/token-registry/issues/108) 
 ### Connect to existing token registry
 
 ```ts
-import { TradeTrustToken__factory } from "@tradetrust-tt/token-registry/contracts";
+import { TradeTrustToken__factory } from "@tradetrust-tt/token-registry-community-sandbox/contracts";
 
 const connectedRegistry = TradeTrustToken__factory.connect(tokenRegistryAddress, signer);
 ```
@@ -119,13 +118,11 @@ The actual owners will use the Title Escrow contract to perform their ownership 
 > 
 > The `remark` field is optional and can be left empty by providing an empty string `"0x"`.
 > Please note that any value in the `remark` field is limited to **120** characters, and encryption is **recommended**.
->
-> Please refer to the sample encryption implementation [here]().
 
 ### Connect to Title Escrow
 
 ```ts
-import { TitleEscrow__factory } from "@tradetrust-tt/token-registry/contracts";
+import { TitleEscrow__factory } from "@tradetrust-tt/token-registry-community-sandbox/contracts";
 
 const connectedEscrow = TitleEscrow__factory.connect(existingTitleEscrowAddress, signer);
 ```
@@ -193,20 +190,19 @@ const nominatedBeneficiary = await connectedEscrow.nominee();
 
 Different ways to get provider or signer:
 
+This library uses **ethers v6**.
+
 ```ts
-import { Wallet, providers, getDefaultProvider } from "ethers";
+import { Wallet, HDNodeWallet, BrowserProvider, getDefaultProvider } from "ethers";
 
 // Providers
 const mainnetProvider = getDefaultProvider();
-const metamaskProvider = new providers.Web3Provider(web3.currentProvider); // Will change network automatically
+const metamaskProvider = new BrowserProvider(window.ethereum); // Browser wallets (e.g. MetaMask)
 
 // Signer
 const signerFromPrivateKey = new Wallet("YOUR-PRIVATE-KEY-HERE", provider);
-const signerFromEncryptedJson = Wallet.fromEncryptedJson(json, password);
-signerFromEncryptedJson.connect(provider);
-
-const signerFromMnemonic = Wallet.fromMnemonic("MNEMONIC-HERE");
-signerFromMnemonic.connect(provider);
+const signerFromEncryptedJson = (await Wallet.fromEncryptedJson(json, password)).connect(provider);
+const signerFromMnemonic = HDNodeWallet.fromPhrase("MNEMONIC-HERE").connect(provider);
 ```
 
 ## Roles and Access
@@ -226,7 +222,7 @@ The following functions can be called on the token contract by the admin user to
 ### Grant a role to a user
 
 ```ts
-import { constants } from "@tradetrust-tt/token-registry";
+import { constants } from "@tradetrust-tt/token-registry-community-sandbox";
 
 await connectedRegistry.grantRole(constants.roleHash.MinterRole, accountAddress);
 ```
@@ -237,7 +233,7 @@ await connectedRegistry.grantRole(constants.roleHash.MinterRole, accountAddress)
 ### Revoke a role from a user
 
 ```ts
-import { constants } from "@tradetrust-tt/token-registry";
+import { constants } from "@tradetrust-tt/token-registry-community-sandbox";
 
 await connectedRegistry.revokeRole(constants.roleHash.AccepterRole, accountAddress);
 ```
@@ -251,7 +247,7 @@ The standard setup does not add the role-admin roles so that users don't deploy 
 If you need a more complex setup, you can add the admin roles to the designated roles.
 
 ```ts
-import { constants } from "@tradetrust-tt/token-registry";
+import { constants } from "@tradetrust-tt/token-registry-community-sandbox";
 const { roleHash } = constants;
 
 await connectedRegistry.setRoleAdmin(roleHash.MinterRole, roleHash.MinterAdminRole);
@@ -337,7 +333,7 @@ network using an existing Title Escrow factory at `0xfac70`.
 Deploys the Title Escrow factory.
 
 ```
-user@NMacBook-Pro token-registry % npx hardhat deploy:token --help
+user@NMacBook-Pro token-registry % npx hardhat deploy:factory --help
 
 Usage: hardhat [GLOBAL OPTIONS] deploy:factory [--verify]
 
@@ -356,7 +352,7 @@ If you want to deploy your own modified version or simply want to have your own 
 npx hardhat deploy:factory --network amoy
 ```
 
-👆 This will deploy a new Title Escrow factory on the _Amoyy_ network without verifying the contract.
+👆 This will deploy a new Title Escrow factory on the _Amoy_ network without verifying the contract.
 To verify the contract, pass in the `--verify` flag.
 
 ## Verification
@@ -401,7 +397,8 @@ ETHERSCAN_API_KEY=
 POLYGONSCAN_API_KEY=
 COINMARKETCAP_API_KEY=
 STABILITY_API_KEY=
-ASTRONSCAN_API_KEY=
+STABILITY_TESTNET_API_KEY=
+ASTRON_API_KEY=
 ASTRON_TESTNET_API_KEY=
 
 # Deployer Private Key
