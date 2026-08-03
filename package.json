@@ -1,6 +1,6 @@
 {
-  "name": "@tradetrust-tt/token-registry",
-  "version": "5.1.1",
+  "name": "@tradetrust-tt/token-registry-community-sandbox",
+  "version": "1.0.0",
   "release": {
     "branches": [
       {

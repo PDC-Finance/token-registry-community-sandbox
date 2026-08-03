@@ -14,6 +14,13 @@
   <img src="https://img.shields.io/github/license/open-attestation/token-registry" />
 </p>
 
+> [!WARNING]
+> **Community Sandbox — Not an Official TradeTrust Release**
+>
+> This repository and its npm package (`@tradetrust-tt/token-registry-community-sandbox`) are a **community sandbox** for experimentation and community contributions. It is **not** the official Token Registry and is **not** a version that TradeTrust stands behind, endorses, or supports for production use.
+>
+> For the official, supported library, use [`@tradetrust-tt/token-registry`](https://www.npmjs.com/package/@tradetrust-tt/token-registry) from the official [TradeTrust/token-registry](https://github.com/TradeTrust/token-registry) repository.
+
 The Electronic Bill of Lading (eBL) is a digital document that can be used to prove the ownership of goods. It is a standardised document that is accepted by all major shipping lines and customs authorities. The [Token Registry](https://github.com/TradeTrust/token-registry) repository contains both the smart contract
 code for token registry (in `/contracts`) as well as the node package for using this library (in `/src`).
 
@@ -55,8 +62,10 @@ code for token registry (in `/contracts`) as well as the node package for using 
 # Installation
 
 ```sh
-npm install --save @tradetrust-tt/token-registry
+npm install --save @tradetrust-tt/token-registry-community-sandbox
 ```
+
+> Looking for the official library instead? `npm install --save @tradetrust-tt/token-registry`
 
 ---
 
