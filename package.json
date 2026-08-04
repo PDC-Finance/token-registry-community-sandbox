@@ -22,7 +22,6 @@
   ],
   "main": "dist/index.js",
   "types": "dist/types/index.d.ts",
-  "repository": "git@github.com:TradeTrust/token-registry.git",
   "author": "GovTech",
   "license": "Apache-2.0",
   "exports": {
@@ -145,5 +144,6 @@
   },
   "dependencies": {
     "ethers": "^6.13.4"
-  }
+  },
+  "repository": "git+https://github.com/TradeTrust/token-registry-community-sandbox.git"
 }
