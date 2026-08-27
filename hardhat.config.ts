@@ -179,6 +179,22 @@ const config: HardhatUserConfig = {
       url: `https://dev-astronlayer2.bitfactory.cn/auth/${ASTRON_TESTNET_API_KEY}`,
     },
     /**
+     * XRPL EVM Testnet
+     */
+    xrplEvmTestnet: {
+      ...networkConfig,
+      url: "https://rpc.testnet.xrplevm.org",
+    },
+
+    /**
+     * XRPL EVM Mainnet
+     */
+    xrplEvm: {
+      ...networkConfig,
+      url: "https://rpc.xrplevm.org",
+    },
+
+    /**
      * Development
      */
     hardhat: {
