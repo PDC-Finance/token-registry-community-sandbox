@@ -25,6 +25,7 @@ import {
   getTitleEscrowContract,
   impersonateAccount,
   TestUsers,
+  txnHexLeis,
   txnHexRemarks,
 } from "./helpers";
 
@@ -54,6 +55,15 @@ describe("Title Escrow", async () => {
 
     it("should support ITitleEscrow interface", async () => {
       const interfaceId = contractInterfaceId.TitleEscrow;
+      const [titleEscrowContract] = await loadFixture(deployTitleEscrowFixtureRunner);
+
+      const res = await titleEscrowContract.supportsInterface(interfaceId);
+
+      expect(res).to.be.true;
+    });
+
+    it("should support ITitleEscrowLei interface", async () => {
+      const interfaceId = contractInterfaceId.TitleEscrowLei;
       const [titleEscrowContract] = await loadFixture(deployTitleEscrowFixtureRunner);
 
       const res = await titleEscrowContract.supportsInterface(interfaceId);
@@ -215,6 +225,36 @@ describe("Title Escrow", async () => {
                 tokenId,
                 txnHexRemarks.mintRemark
               );
+          });
+
+          it("should emit IncomingLei when mint payload includes LEIs", async () => {
+            data = new ethers.AbiCoder().encode(
+              ["address", "address", "bytes", "bytes", "bytes"],
+              [
+                users.beneficiary.address,
+                users.holder.address,
+                txnHexRemarks.mintRemark,
+                txnHexLeis.beneficiaryLei,
+                txnHexLeis.holderLei,
+              ]
+            );
+
+            const tx = titleEscrowContract
+              .connect(fakeRegistry.wallet as Signer)
+              .onERC721Received(fakeAddress, fakeAddress, tokenId, data);
+
+            await expect(tx)
+              .to.emit(titleEscrowContract, "IncomingLei")
+              .withArgs(fakeRegistry.target, tokenId, txnHexLeis.beneficiaryLei, txnHexLeis.holderLei);
+            await expect(tx).to.emit(titleEscrowContract, "TokenReceived");
+          });
+
+          it("should not emit IncomingLei when mint payload has empty LEIs", async () => {
+            const tx = titleEscrowContract
+              .connect(fakeRegistry.wallet as Signer)
+              .onERC721Received(fakeAddress, fakeAddress, tokenId, data);
+
+            await expect(tx).to.not.emit(titleEscrowContract, "IncomingLei");
           });
 
           describe("When minting token receive is sent without data", () => {
@@ -479,6 +519,137 @@ describe("Title Escrow", async () => {
 
     beforeEach(async () => {
       [, registryContract] = await loadFixture(deployTokenFixtureRunner);
+    });
+
+    describe("Incoming LEI", () => {
+      const exceededLengthLei = ethers.hexlify(ethers.randomBytes(21));
+
+      beforeEach(async () => {
+        await registryContract
+          .connect(users.carrier)
+          .mint(users.beneficiary.address, users.holder.address, tokenId, txnHexRemarks.mintRemark);
+        titleEscrowOwnerContract = await getTitleEscrowContract(registryContract, tokenId);
+      });
+
+      it("should keep existing nominate signature working without IncomingLei", async () => {
+        const [beneficiaryNominee] = users.others;
+
+        const tx = titleEscrowOwnerContract
+          .connect(users.beneficiary)
+          .nominate(beneficiaryNominee.address, txnHexRemarks.nominateRemark);
+
+        await expect(tx).to.not.emit(titleEscrowOwnerContract, "IncomingLei");
+        expect(await titleEscrowOwnerContract.nominee()).to.equal(beneficiaryNominee.address);
+      });
+
+      it("should emit IncomingLei on nominate with incoming beneficiary LEI", async () => {
+        const [beneficiaryNominee] = users.others;
+
+        const tx = titleEscrowOwnerContract
+          .connect(users.beneficiary)
+          ["nominate(address,bytes,bytes)"](
+            beneficiaryNominee.address,
+            txnHexRemarks.nominateRemark,
+            txnHexLeis.beneficiaryLei
+          );
+
+        await expect(tx)
+          .to.emit(titleEscrowOwnerContract, "IncomingLei")
+          .withArgs(registryContract.target, tokenId, txnHexLeis.beneficiaryLei, "0x");
+        await expect(tx)
+          .to.emit(titleEscrowOwnerContract, "Nomination")
+          .withArgs(
+            defaultAddress.Zero,
+            beneficiaryNominee.address,
+            registryContract.target,
+            tokenId,
+            txnHexRemarks.nominateRemark
+          );
+      });
+
+      it("should revert nominate when beneficiary LEI exceeds 20 bytes", async () => {
+        const [beneficiaryNominee] = users.others;
+
+        const tx = titleEscrowOwnerContract
+          .connect(users.beneficiary)
+          ["nominate(address,bytes,bytes)"](
+            beneficiaryNominee.address,
+            txnHexRemarks.nominateRemark,
+            exceededLengthLei
+          );
+
+        await expect(tx).to.be.revertedWithCustomError(titleEscrowOwnerContract, "LeiLengthExceeded");
+      });
+
+      it("should emit IncomingLei on transferBeneficiary with incoming beneficiary LEI", async () => {
+        const [beneficiaryNominee] = users.others;
+        await titleEscrowOwnerContract
+          .connect(users.beneficiary)
+          .nominate(beneficiaryNominee.address, txnHexRemarks.nominateRemark);
+
+        const tx = titleEscrowOwnerContract
+          .connect(users.holder)
+          ["transferBeneficiary(address,bytes,bytes)"](
+            beneficiaryNominee.address,
+            txnHexRemarks.beneficiaryTransferRemark,
+            txnHexLeis.beneficiaryLei
+          );
+
+        await expect(tx)
+          .to.emit(titleEscrowOwnerContract, "IncomingLei")
+          .withArgs(registryContract.target, tokenId, txnHexLeis.beneficiaryLei, "0x");
+      });
+
+      it("should emit IncomingLei on transferHolder with incoming holder LEI", async () => {
+        const [newHolder] = users.others;
+
+        const tx = titleEscrowOwnerContract
+          .connect(users.holder)
+          ["transferHolder(address,bytes,bytes)"](
+            newHolder.address,
+            txnHexRemarks.holderTransferRemark,
+            txnHexLeis.holderLei
+          );
+
+        await expect(tx)
+          .to.emit(titleEscrowOwnerContract, "IncomingLei")
+          .withArgs(registryContract.target, tokenId, "0x", txnHexLeis.holderLei);
+      });
+
+      it("should emit IncomingLei for both parties on transferOwners", async () => {
+        const [newBeneficiary, newHolder] = users.others;
+        await titleEscrowOwnerContract
+          .connect(users.beneficiary)
+          .nominate(newBeneficiary.address, txnHexRemarks.nominateRemark);
+
+        const tx = titleEscrowOwnerContract
+          .connect(users.holder)
+          ["transferOwners(address,address,bytes,bytes,bytes)"](
+            newBeneficiary.address,
+            newHolder.address,
+            txnHexRemarks.transferOwnersRemark,
+            txnHexLeis.beneficiaryLei,
+            txnHexLeis.holderLei
+          );
+
+        await expect(tx)
+          .to.emit(titleEscrowOwnerContract, "IncomingLei")
+          .withArgs(registryContract.target, tokenId, txnHexLeis.beneficiaryLei, "0x");
+        await expect(tx)
+          .to.emit(titleEscrowOwnerContract, "IncomingLei")
+          .withArgs(registryContract.target, tokenId, "0x", txnHexLeis.holderLei);
+      });
+
+      it("should allow empty LEI bytes", async () => {
+        const [newHolder] = users.others;
+
+        const tx = titleEscrowOwnerContract
+          .connect(users.holder)
+          ["transferHolder(address,bytes,bytes)"](newHolder.address, txnHexRemarks.holderTransferRemark, "0x");
+
+        await expect(tx).to.not.emit(titleEscrowOwnerContract, "IncomingLei");
+        expect(await titleEscrowOwnerContract.holder()).to.equal(newHolder.address);
+      });
     });
 
     describe("Nomination", () => {

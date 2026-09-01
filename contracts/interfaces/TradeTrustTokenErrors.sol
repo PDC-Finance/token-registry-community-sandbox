@@ -11,4 +11,6 @@ interface TradeTrustTokenErrors {
   error TransferFailure();
 
   error RemarkLengthExceeded();
+
+  error LeiLengthExceeded();
 }

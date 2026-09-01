@@ -34,5 +34,7 @@ interface TitleEscrowErrors {
 
   error RemarkLengthExceeded();
 
+  error LeiLengthExceeded();
+
   error DualRoleRejectionRequired();
 }

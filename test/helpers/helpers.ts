@@ -44,6 +44,16 @@ export const remarkString = {
   rejectTransferRemark: "Remark: Transfer of the document rejected due to discrepancies or errors in the request.",
 };
 
+export const leiString = {
+  beneficiaryLei: "5493001KJTIIGC8Y1R12",
+  holderLei: "213800WAVVOPS85N2205",
+};
+
+export const txnHexLeis = {
+  beneficiaryLei: ethers.hexlify(ethers.toUtf8Bytes(leiString.beneficiaryLei)),
+  holderLei: ethers.hexlify(ethers.toUtf8Bytes(leiString.holderLei)),
+};
+
 // Define the type for remarkString keys
 type RemarkKeys = keyof typeof remarkString;
 

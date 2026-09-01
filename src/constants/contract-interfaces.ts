@@ -1,6 +1,7 @@
 export const contractInterfaces = {
   TradeTrustSBT: ["genesis()", "titleEscrowFactory()"],
   TradeTrustTokenMintable: ["mint(address,address,uint256,bytes)"],
+  TradeTrustTokenMintableLei: ["mint(address,address,uint256,bytes,bytes,bytes)"],
   TradeTrustTokenBurnable: ["burn(uint256,bytes)"],
   TradeTrustTokenRestorable: ["restore(uint256,bytes)"],
   TitleEscrow: [
@@ -22,6 +23,12 @@ export const contractInterfaces = {
     "isHoldingToken()",
     "returnToIssuer(bytes)",
     "shred(bytes)",
+  ],
+  TitleEscrowLei: [
+    "nominate(address,bytes,bytes)",
+    "transferBeneficiary(address,bytes,bytes)",
+    "transferHolder(address,bytes,bytes)",
+    "transferOwners(address,address,bytes,bytes,bytes)",
   ],
   TitleEscrowSignable: [
     "transferBeneficiaryWithSig((address,address,address,address,uint256,uint256,uint256),(bytes32,bytes32,uint8))",

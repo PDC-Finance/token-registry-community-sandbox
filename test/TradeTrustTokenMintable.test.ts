@@ -6,7 +6,7 @@ import { expect } from ".";
 import { contractInterfaceId, defaultAddress } from "../src/constants";
 import { computeTitleEscrowAddress } from "../src/utils";
 import { deployTokenFixture } from "./fixtures";
-import { getTestUsers, getTitleEscrowContract, remarkString, TestUsers, txnHexRemarks } from "./helpers";
+import { getTestUsers, getTitleEscrowContract, remarkString, TestUsers, txnHexLeis, txnHexRemarks } from "./helpers";
 
 describe("TradeTrustTokenMintable", async () => {
   let users: TestUsers;
@@ -211,6 +211,88 @@ describe("TradeTrustTokenMintable", async () => {
 
         // convert the hex string to utf8 and compare
         expect(ethers.toUtf8String(remark)).to.equal(remarkString.mintRemark);
+      });
+    });
+
+    describe("Mint with incoming LEI", () => {
+      beforeEach(async () => {
+        tokenId = faker.datatype.hexaDecimal(64);
+      });
+
+      it("should support ITradeTrustTokenMintableLei", async () => {
+        const interfaceId = contractInterfaceId.TradeTrustTokenMintableLei;
+
+        const res = await registryContract.supportsInterface(interfaceId);
+
+        expect(res).to.be.true;
+      });
+
+      it("should emit IncomingLei and keep TokenReceived unchanged", async () => {
+        const tx = await registryContractAsAdmin["mint(address,address,uint256,bytes,bytes,bytes)"](
+          users.beneficiary.address,
+          users.holder.address,
+          tokenId,
+          txnHexRemarks.mintRemark,
+          txnHexLeis.beneficiaryLei,
+          txnHexLeis.holderLei
+        );
+        titleEscrowContract = await getTitleEscrowContract(registryContract, tokenId);
+
+        await expect(tx)
+          .to.emit(titleEscrowContract, "IncomingLei")
+          .withArgs(registryContract.target, tokenId, txnHexLeis.beneficiaryLei, txnHexLeis.holderLei);
+        await expect(tx)
+          .to.emit(titleEscrowContract, "TokenReceived")
+          .withArgs(
+            users.beneficiary.address,
+            users.holder.address,
+            true,
+            registryContract.target,
+            tokenId,
+            txnHexRemarks.mintRemark
+          );
+      });
+
+      it("should not emit IncomingLei when minting without LEI args", async () => {
+        const tx = await registryContractAsAdmin.mint(
+          users.beneficiary.address,
+          users.holder.address,
+          tokenId,
+          txnHexRemarks.mintRemark
+        );
+        titleEscrowContract = await getTitleEscrowContract(registryContract, tokenId);
+
+        await expect(tx).to.not.emit(titleEscrowContract, "IncomingLei");
+      });
+
+      it("should revert when beneficiary LEI exceeds 20 bytes", async () => {
+        const exceededLengthLei = ethers.hexlify(ethers.randomBytes(21));
+
+        const tx = registryContractAsAdmin["mint(address,address,uint256,bytes,bytes,bytes)"](
+          users.beneficiary.address,
+          users.holder.address,
+          tokenId,
+          txnHexRemarks.mintRemark,
+          exceededLengthLei,
+          txnHexLeis.holderLei
+        );
+
+        await expect(tx).to.be.revertedWithCustomError(registryContractAsAdmin, "LeiLengthExceeded");
+      });
+
+      it("should revert when holder LEI exceeds 20 bytes", async () => {
+        const exceededLengthLei = ethers.hexlify(ethers.randomBytes(21));
+
+        const tx = registryContractAsAdmin["mint(address,address,uint256,bytes,bytes,bytes)"](
+          users.beneficiary.address,
+          users.holder.address,
+          tokenId,
+          txnHexRemarks.mintRemark,
+          txnHexLeis.beneficiaryLei,
+          exceededLengthLei
+        );
+
+        await expect(tx).to.be.revertedWithCustomError(registryContractAsAdmin, "LeiLengthExceeded");
       });
     });
   });

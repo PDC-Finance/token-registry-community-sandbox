@@ -5,6 +5,7 @@ import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { IERC165 } from "@openzeppelin/contracts/interfaces/IERC165.sol";
 import { ITitleEscrow } from "./interfaces/ITitleEscrow.sol";
+import { ITitleEscrowLei } from "./interfaces/ITitleEscrowLei.sol";
 import { ITradeTrustToken } from "./interfaces/ITradeTrustToken.sol";
 import { TitleEscrowErrors } from "./interfaces/TitleEscrowErrors.sol";
 
@@ -12,7 +13,7 @@ import { TitleEscrowErrors } from "./interfaces/TitleEscrowErrors.sol";
  * @title TitleEscrow
  * @dev Title escrow contract for managing the beneficiaries and holders of a transferable record.
  */
-contract TitleEscrow is Initializable, IERC165, TitleEscrowErrors, ITitleEscrow {
+contract TitleEscrow is Initializable, IERC165, TitleEscrowErrors, ITitleEscrow, ITitleEscrowLei {
   address public override registry;
   uint256 public override tokenId;
 
@@ -110,7 +111,7 @@ contract TitleEscrow is Initializable, IERC165, TitleEscrowErrors, ITitleEscrow 
    * @dev See {ERC165-supportsInterface}.
    */
   function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-    return interfaceId == type(ITitleEscrow).interfaceId;
+    return interfaceId == type(ITitleEscrow).interfaceId || interfaceId == type(ITitleEscrowLei).interfaceId;
   }
 
   /**
@@ -133,7 +134,14 @@ contract TitleEscrow is Initializable, IERC165, TitleEscrowErrors, ITitleEscrow 
       if (data.length == 0) {
         revert EmptyReceivingData();
       }
-      (address _beneficiary, address _holder, bytes memory _remark) = abi.decode(data, (address, address, bytes));
+      (
+        address _beneficiary,
+        address _holder,
+        bytes memory _remark,
+        bytes memory _beneficiaryLei,
+        bytes memory _holderLei
+      ) = _decodeReceivingData(data);
+      if (_beneficiaryLei.length > 20 || _holderLei.length > 20) revert LeiLengthExceeded();
       if (_beneficiary == address(0) || _holder == address(0)) {
         revert InvalidTokenTransferToZeroAddressOwners(_beneficiary, _holder);
       }
@@ -141,6 +149,7 @@ contract TitleEscrow is Initializable, IERC165, TitleEscrowErrors, ITitleEscrow 
       _setHolder(_holder, "");
       remark = _remark;
       isMinting = true;
+      _emitIncomingLei(_beneficiaryLei, _holderLei);
     } else remark = data;
 
     emit TokenReceived(beneficiary, holder, isMinting, registry, tokenId, remark);
@@ -150,10 +159,90 @@ contract TitleEscrow is Initializable, IERC165, TitleEscrowErrors, ITitleEscrow 
   /**
    * @dev See {ITitleEscrow-nominate}.
    */
+  function nominate(address _nominee, bytes calldata _remark) public virtual override(ITitleEscrow) {
+    _nominate(_nominee, _remark, bytes(""));
+  }
+
+  /**
+   * @dev See {ITitleEscrowLei-nominate}.
+   */
   function nominate(
     address _nominee,
+    bytes calldata _remark,
+    bytes calldata _beneficiaryLei
+  ) public virtual override(ITitleEscrowLei) {
+    _nominate(_nominee, _remark, _beneficiaryLei);
+  }
+
+  /**
+   * @dev See {ITitleEscrow-transferBeneficiary}.
+   */
+  function transferBeneficiary(address _nominee, bytes calldata _remark) public virtual override(ITitleEscrow) {
+    _transferBeneficiary(_nominee, _remark, bytes(""));
+  }
+
+  /**
+   * @dev See {ITitleEscrowLei-transferBeneficiary}.
+   */
+  function transferBeneficiary(
+    address _nominee,
+    bytes calldata _remark,
+    bytes calldata _beneficiaryLei
+  ) public virtual override(ITitleEscrowLei) {
+    _transferBeneficiary(_nominee, _remark, _beneficiaryLei);
+  }
+
+  /**
+   * @dev See {ITitleEscrow-transferHolder}.
+   */
+  function transferHolder(address newHolder, bytes calldata _remark) public virtual override(ITitleEscrow) {
+    _transferHolder(newHolder, _remark, bytes(""));
+  }
+
+  /**
+   * @dev See {ITitleEscrowLei-transferHolder}.
+   */
+  function transferHolder(
+    address newHolder,
+    bytes calldata _remark,
+    bytes calldata _holderLei
+  ) public virtual override(ITitleEscrowLei) {
+    _transferHolder(newHolder, _remark, _holderLei);
+  }
+
+  /**
+   * @dev See {ITitleEscrow-transferOwners}.
+   */
+  function transferOwners(
+    address _nominee,
+    address newHolder,
     bytes calldata _remark
-  ) public virtual override whenNotPaused whenActive onlyBeneficiary whenHoldingToken remarkLengthLimit(_remark) {
+  ) external virtual override(ITitleEscrow) {
+    transferBeneficiary(_nominee, _remark);
+    transferHolder(newHolder, _remark);
+  }
+
+  /**
+   * @dev See {ITitleEscrowLei-transferOwners}.
+   */
+  function transferOwners(
+    address _nominee,
+    address newHolder,
+    bytes calldata _remark,
+    bytes calldata _beneficiaryLei,
+    bytes calldata _holderLei
+  ) external virtual override(ITitleEscrowLei) {
+    transferBeneficiary(_nominee, _remark, _beneficiaryLei);
+    transferHolder(newHolder, _remark, _holderLei);
+  }
+
+  function _nominate(
+    address _nominee,
+    bytes memory _remark,
+    bytes memory _beneficiaryLei
+  ) internal whenNotPaused whenActive onlyBeneficiary whenHoldingToken {
+    if (_remark.length > 120) revert RemarkLengthExceeded();
+    if (_beneficiaryLei.length > 20) revert LeiLengthExceeded();
     if (beneficiary == _nominee) {
       revert TargetNomineeAlreadyBeneficiary();
     }
@@ -165,15 +254,16 @@ contract TitleEscrow is Initializable, IERC165, TitleEscrowErrors, ITitleEscrow 
     remark = _remark;
 
     _setNominee(_nominee, _remark);
+    _emitIncomingLei(_beneficiaryLei, "");
   }
 
-  /**
-   * @dev See {ITitleEscrow-transferBeneficiary}.
-   */
-  function transferBeneficiary(
+  function _transferBeneficiary(
     address _nominee,
-    bytes calldata _remark
-  ) public virtual override whenNotPaused whenActive onlyHolder whenHoldingToken remarkLengthLimit(_remark) {
+    bytes memory _remark,
+    bytes memory _beneficiaryLei
+  ) internal whenNotPaused whenActive onlyHolder whenHoldingToken {
+    if (_remark.length > 120) revert RemarkLengthExceeded();
+    if (_beneficiaryLei.length > 20) revert LeiLengthExceeded();
     if (_nominee == address(0)) {
       revert InvalidTransferToZeroAddress();
     }
@@ -185,15 +275,16 @@ contract TitleEscrow is Initializable, IERC165, TitleEscrowErrors, ITitleEscrow 
     remark = _remark;
 
     _setBeneficiary(_nominee, _remark);
+    _emitIncomingLei(_beneficiaryLei, "");
   }
 
-  /**
-   * @dev See {ITitleEscrow-transferHolder}.
-   */
-  function transferHolder(
+  function _transferHolder(
     address newHolder,
-    bytes calldata _remark
-  ) public virtual override whenNotPaused whenActive onlyHolder whenHoldingToken remarkLengthLimit(_remark) {
+    bytes memory _remark,
+    bytes memory _holderLei
+  ) internal whenNotPaused whenActive onlyHolder whenHoldingToken {
+    if (_remark.length > 120) revert RemarkLengthExceeded();
+    if (_holderLei.length > 20) revert LeiLengthExceeded();
     if (newHolder == address(0)) {
       revert InvalidTransferToZeroAddress();
     }
@@ -205,14 +296,7 @@ contract TitleEscrow is Initializable, IERC165, TitleEscrowErrors, ITitleEscrow 
     remark = _remark;
 
     _setHolder(newHolder, _remark);
-  }
-
-  /**
-   * @dev See {ITitleEscrow-transferOwners}.
-   */
-  function transferOwners(address _nominee, address newHolder, bytes calldata _remark) external virtual override {
-    transferBeneficiary(_nominee, _remark);
-    transferHolder(newHolder, _remark);
+    _emitIncomingLei("", _holderLei);
   }
 
   /**
@@ -374,5 +458,38 @@ contract TitleEscrow is Initializable, IERC165, TitleEscrowErrors, ITitleEscrow 
   function _setHolder(address newHolder, bytes memory _remark) internal virtual {
     emit HolderTransfer(holder, newHolder, registry, tokenId, _remark);
     holder = newHolder;
+  }
+
+  /**
+   * @notice Decodes mint payload. Supports the original (beneficiary, holder, remark) encoding
+   *         and the additive (..., beneficiaryLei, holderLei) encoding.
+   */
+  function _decodeReceivingData(
+    bytes calldata data
+  )
+    internal
+    pure
+    returns (
+      address beneficiary_,
+      address holder_,
+      bytes memory remark_,
+      bytes memory beneficiaryLei_,
+      bytes memory holderLei_
+    )
+  {
+    if (data.length >= 96 && uint256(bytes32(data[64:96])) == 160) {
+      return abi.decode(data, (address, address, bytes, bytes, bytes));
+    }
+    (beneficiary_, holder_, remark_) = abi.decode(data, (address, address, bytes));
+  }
+
+  /**
+   * @notice Emits IncomingLei only when at least one LEI is non-empty, to avoid extra log cost on legacy calls.
+   */
+  function _emitIncomingLei(bytes memory _beneficiaryLei, bytes memory _holderLei) internal {
+    if (_beneficiaryLei.length == 0 && _holderLei.length == 0) {
+      return;
+    }
+    emit IncomingLei(registry, tokenId, _beneficiaryLei, _holderLei);
   }
 }
