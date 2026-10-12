@@ -11,6 +11,7 @@
   <a href="https://github.com/TradeTrust/token-registry-community-sandbox/tree/master" alt="Release"><img src="https://github.com/TradeTrust/token-registry-community-sandbox/actions/workflows/release.yml/badge.svg?event=push" /></a>
   <a href="https://www.npmjs.com/package/@tradetrust-tt/token-registry-community-sandbox" alt="NPM"><img src="https://img.shields.io/npm/dw/@tradetrust-tt/token-registry-community-sandbox" /></a>
   <img src="https://img.shields.io/github/license/TradeTrust/token-registry-community-sandbox" />
+  <a href="https://github.com/PDC-Finance/token-registry-community-sandbox/blob/master/src/constants/contract-address.ts"><img src="https://img.shields.io/badge/Contract%20Addresses-contract--address.ts-0B74DE" alt="Contract addresses" /></a>
 </p>
 
 > [!WARNING]
@@ -19,6 +20,9 @@
 > This repository and its npm package (`@tradetrust-tt/token-registry-community-sandbox`) are a **community sandbox** for experimentation and community contributions. It is **not** the official Token Registry and is **not** a version that TradeTrust stands behind, endorses, or supports for production use.
 >
 > For the official, supported library, use [`@tradetrust-tt/token-registry`](https://www.npmjs.com/package/@tradetrust-tt/token-registry) from the official [TradeTrust/token-registry](https://github.com/TradeTrust/token-registry) repository.
+
+> [!TIP]
+> **Contract addresses (one click):** [Title Escrow Factory, Deployer, and Token Implementation addresses](https://github.com/PDC-Finance/token-registry-community-sandbox/blob/master/src/constants/contract-address.ts) for every supported network.
 
 The Electronic Bill of Lading (eBL) is a digital document that can be used to prove the ownership of goods. It is a standardised document that is accepted by all major shipping lines and customs authorities. This repository contains both the smart contract
 code for the token registry (in `/contracts`) as well as the node package for using this library (in `/src`).
@@ -52,6 +56,7 @@ code for the token registry (in `/contracts`) as well as the node package for us
       - [Deploy a new Title Escrow Factory](#deploy-a-new-title-escrow-factory)
   - [Verification](#verification)
   - [Network Configuration](#network-configuration)
+    - [Contract addresses](https://github.com/PDC-Finance/token-registry-community-sandbox/blob/master/src/constants/contract-address.ts)
 - [Configuration](#configuration)
 - [Development](#development)
   - [Scripts](#scripts)
@@ -367,6 +372,10 @@ tasks (which internally uses the same plugin), you will need to include your cor
 
 ## Network Configuration
 
+Deployed Title Escrow Factory, Deployer, and Token Implementation addresses for each chain are in **[src/constants/contract-address.ts](https://github.com/PDC-Finance/token-registry-community-sandbox/blob/master/src/constants/contract-address.ts)**.
+
+Chain IDs and which networks TradeTrust lists (including this sandbox’s XRPL EVM contribution) are on the [Supported Blockchain & Network](https://docs.tradetrust.io/docs/introduction/key-components-of-tradetrust/blockchain/supported-network#community-contribution-xrpl-evm) page.
+
 Here's a list of network names currently pre-configured:
 
 - `mainnet` (Ethereum)
@@ -379,6 +388,8 @@ Here's a list of network names currently pre-configured:
 - `stability` (Stability Global Trust Network)
 - `astron` (astron Network MainNet)
 - `astrontestnet` (astron Network TestNet)
+- `xrplEvm` (XRPL EVM Mainnet)
+- `xrplEvmTestnet` (XRPL EVM Testnet)
 
 > [!TIP]
 > 💡 You can configure existing and add other networks you wish to deploy to in the `hardhat.config.ts` file.
