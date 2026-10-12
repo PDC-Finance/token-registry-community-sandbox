@@ -21,11 +21,14 @@
 >
 > For the official, supported library, use [`@tradetrust-tt/token-registry`](https://www.npmjs.com/package/@tradetrust-tt/token-registry) from the official [TradeTrust/token-registry](https://github.com/TradeTrust/token-registry) repository.
 
-> [!TIP]
-> **Contract addresses (one click):** [Title Escrow Factory, Deployer, and Token Implementation addresses](https://github.com/PDC-Finance/token-registry-community-sandbox/blob/master/src/constants/contract-address.ts) for every supported network.
-
 The Electronic Bill of Lading (eBL) is a digital document that can be used to prove the ownership of goods. It is a standardised document that is accepted by all major shipping lines and customs authorities. This repository contains both the smart contract
 code for the token registry (in `/contracts`) as well as the node package for using this library (in `/src`).
+
+## Community contribution: XRPL EVM (BlockPeer)
+
+[BlockPeer](https://www.blockpeer.finance/) has contributed XRPL EVM support to this community sandbox, enabling TradeTrust-enabled electronic trade documents on [XRPL EVM](https://www.xrplevm.org/) Mainnet (`1440000`) and Testnet (`1449000`).
+
+Deployed Title Escrow Factory, Deployer, and Token Implementation addresses for every network in this sandbox, including XRPL EVM, are listed in [`src/constants/contract-address.ts`](https://github.com/PDC-Finance/token-registry-community-sandbox/blob/master/src/constants/contract-address.ts).
 
 ## Table of Contents
 
@@ -374,7 +377,7 @@ tasks (which internally uses the same plugin), you will need to include your cor
 
 Deployed Title Escrow Factory, Deployer, and Token Implementation addresses for each chain are in **[src/constants/contract-address.ts](https://github.com/PDC-Finance/token-registry-community-sandbox/blob/master/src/constants/contract-address.ts)**.
 
-Chain IDs and which networks TradeTrust lists (including this sandbox’s XRPL EVM contribution) are on the [Supported Blockchain & Network](https://docs.tradetrust.io/docs/introduction/key-components-of-tradetrust/blockchain/supported-network#community-contribution-xrpl-evm) page.
+XRPL EVM Mainnet and Testnet (`xrplEvm`, `xrplEvmTestnet`) are part of BlockPeer’s community contribution. See [Community contribution: XRPL EVM (BlockPeer)](#community-contribution-xrpl-evm-blockpeer).
 
 Here's a list of network names currently pre-configured:
 
